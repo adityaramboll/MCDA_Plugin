@@ -8,7 +8,9 @@ using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
 using Rhino.Geometry;
 using Numpy;
-using DeciGenArch.Calc_library ; 
+using DeciGenArch.Calc_library ;
+using Rhino.FileIO;
+using System.Runtime.InteropServices;
 
 namespace MCDA
 {
@@ -40,7 +42,7 @@ namespace MCDA
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddNumberParameter("Rankings", "Rank", "Result of TOPSIS ranking process", GH_ParamAccess.list);
+            pManager.AddTextParameter("Rankings", "Rank", "Result of TOPSIS ranking process", GH_ParamAccess.list);
             pManager.AddNumberParameter("Ideal", "Idl", "Normalized sintectic better alternatives", GH_ParamAccess.list);
             pManager.AddNumberParameter("Anti-ideal", "AntiId", "Normalized sintectic worse alternatives", GH_ParamAccess.list);
             pManager.AddGenericParameter("Similarity", "Sim", "Indicates how far from the anti-ideal and how closer to the ideal are the real alternatives", GH_ParamAccess.item);
@@ -107,9 +109,8 @@ namespace MCDA
             }
 
             //TOPSIS process
+            GH_Structure<GH_Number> inputTree;
 
-            GH_Structure<GH_Number> inputTree = new GH_Structure<GH_Number>();
-            
 
             if (!DA.GetDataTree(0, out inputTree))
             {
@@ -118,8 +119,9 @@ namespace MCDA
 
             inputTree.Simplify(GH_SimplificationMode.CollapseAllOverlaps);
             TreeToArrayConverter converter = new TreeToArrayConverter();
-            double[][] dmarray = converter.ConvertTreeToArray(inputTree);
-            var m = np.array(dmarray[0][1]);
+            double[,] dmarray = converter.ConvertTreeToArray(inputTree);
+            var m = np.array(dmarray);
+            DA.SetData(0, m[0][0]);
 
         }
 

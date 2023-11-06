@@ -11,7 +11,7 @@ namespace DeciGenArch.Calc_library
 {
     public class TreeToArrayConverter
     {
-                public double[][] ConvertTreeToArray(GH_Structure<GH_Number> inputTree)
+                public double[,] ConvertTreeToArray(GH_Structure<GH_Number> inputTree)
                 {
                     int rowCount = inputTree.PathCount;
                     int columnCount = inputTree.Branches[0].Count;
@@ -25,9 +25,22 @@ namespace DeciGenArch.Calc_library
                             array[i][j] = inputTree.get_DataItem(new GH_Path(i), j).Value;
                         }
                     }
+                    int numRows = array.Length;
+                    int numCols = array[0].Length;
+                    double[,] multidimensionalArray = new double[numRows, numCols];
+
+                    for (int i = 0; i < numRows; i++)
+                    {
+                        for (int j = 0; j < numCols; j++)
+                        {
+                            multidimensionalArray[i, j] = array[i][j];
+                        }
+                    }
 
 
-                    return array;
+                     return multidimensionalArray;
                 }
-            }
+     
+        
+    }
 }
