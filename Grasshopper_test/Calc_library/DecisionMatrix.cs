@@ -92,8 +92,9 @@ namespace DeciGenArch.Calc_library
             var performancescore = idealbest + idealworst;
             return performancescore;
         }
-        public NDarray CalculateRankings(NDarray performancescore )
+        public NDarray CalculateRankings(NDarray performancescore, List<string> designoptions)
         {
+
             return performancescore;
         }
     }

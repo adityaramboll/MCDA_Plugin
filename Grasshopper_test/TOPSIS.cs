@@ -33,6 +33,7 @@ namespace MCDA
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
+            pManager.AddTextParameter("DesignOptions", "Opt", "Add names to the design options", GH_ParamAccess.list);
             pManager.AddNumberParameter("inputMatrix", "IM", "Add a decision matrix to evaluate", GH_ParamAccess.tree);
             pManager.AddTextParameter("Criteria", "Crit", "Add the names of various criteria used for decision making ", GH_ParamAccess.list);
             pManager.AddBooleanParameter("Objectives", "Obj", "Specify objectives for the criteria as a list either Min(0) or Max (1)", GH_ParamAccess.list);
@@ -58,20 +59,22 @@ namespace MCDA
         {
             //Inputs empties initialized
             List<string> inpCriteria = new List<string>();
+            List<string> Designoptions = new List<string>();
             List<bool> inpObjectives = new List<bool>();
             List<double> inpWeights = new List<double>();
             int numberOfPaths = 0;
             List<int> pathLengths = new List<int>();
 
             //Inputs  initialized using actual data
-            DA.GetDataList(1, inpCriteria);
-            DA.GetDataList(2, inpObjectives);
-            DA.GetDataList(3, inpWeights);
+            DA.GetDataList(0, Designoptions);
+            DA.GetDataList(2, inpCriteria);
+            DA.GetDataList(3, inpObjectives);
+            DA.GetDataList(4, inpWeights);
 
             GH_Structure<GH_Number> dataTree = new GH_Structure<GH_Number>();
 
             // Check if data tree input is correct 
-            if (DA.GetDataTree(0, out dataTree))
+            if (DA.GetDataTree(1, out dataTree))
             {
                 numberOfPaths = dataTree.PathCount;
 
@@ -114,7 +117,7 @@ namespace MCDA
             GH_Structure<GH_Number> inputTree;
 
 
-            if (!DA.GetDataTree(0, out inputTree))
+            if (!DA.GetDataTree(1, out inputTree))
             {
                 return;
             }
@@ -123,18 +126,26 @@ namespace MCDA
             TreeToArrayConverter converter = new TreeToArrayConverter();
             double[,] dmarray = converter.ConvertTreeToArray(inputTree);
             var decisionmatrix = np.array(dmarray);
+
             var  normalized_matrix= converter.CalculateNormalizedmatrix(decisionmatrix);
             var weights = np.array(inpWeights.ToArray());
             var weightedNormalizedmatrix = converter.CalculateWeightedNormalizedmatrix(weights, normalized_matrix);
+
             var idealbestnparray = converter.Calculateidealbest(weightedNormalizedmatrix);
             var idealbestlist = idealbestnparray.GetData<double>();
+
             var idealworstnparray = converter.Calculateidealworst(weightedNormalizedmatrix);
             var idealworstlist = idealworstnparray.GetData<double>();
-            var performancescorelist = converter.Calculateperformancescore(idealbestnparray, idealworstnparray);
 
+            var performancescorearray = converter.Calculateperformancescore(idealbestnparray, idealworstnparray);
+            var performancescorelist = performancescorearray.GetData<double>();
+
+            var rankinglist = converter.CalculateRankings(performancescorearray, inpCriteria);
+
+            DA.SetDataList(0, idealbestlist);
             DA.SetDataList(1, idealbestlist);
             DA.SetDataList(2, idealworstlist);
-            DA.SetDataList(3, idealworstlist);
+            DA.SetDataList(3, performancescorelist);
         }
 
         /// <summary>
