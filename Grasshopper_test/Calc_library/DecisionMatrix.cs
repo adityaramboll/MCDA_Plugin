@@ -92,10 +92,25 @@ namespace DeciGenArch.Calc_library
             var performancescore = idealbest + idealworst;
             return performancescore;
         }
-        public NDarray CalculateRankings(NDarray performancescore, List<string> designoptions)
+        public List<string> CalculateRankings(NDarray performancescore, List<string> designoptions)
         {
+            var sorted_ranks = performancescore.sort();
+            var sorted_rank_list = sorted_ranks.GetData<double>();
 
-            return performancescore;
+            List<string> RankList = new List<string>();
+
+            var Design_options = np.array(designoptions.ToArray());
+            var sorted_indices = np.argsort(performancescore);
+            var sorted_strings = Design_options[sorted_indices];
+
+            // Calculate ranks and create a list of strings with ranks
+            for (int i = 0; i < sorted_rank_list.Length; i++)
+            {
+                int rank = i + 1;
+                RankList.Add($"Rank {rank}: {sorted_rank_list[i]} : {sorted_strings[i]}");
+            }
+
+            return RankList;
         }
     }
 }

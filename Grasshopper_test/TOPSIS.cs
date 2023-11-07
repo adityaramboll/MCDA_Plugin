@@ -12,6 +12,7 @@ using DeciGenArch.Calc_library ;
 using Rhino.FileIO;
 using System.Runtime.InteropServices;
 using Numpy.Models;
+using System.Drawing;
 
 
 namespace MCDA
@@ -45,7 +46,7 @@ namespace MCDA
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddNumberParameter("Rankings", "Rank", "Result of TOPSIS ranking process", GH_ParamAccess.list);
+            pManager.AddTextParameter("Rankings", "Rank", "Result of TOPSIS ranking process", GH_ParamAccess.list);
             pManager.AddNumberParameter("Ideal", "Idl", "Normalized sintectic better alternatives", GH_ParamAccess.list);
             pManager.AddNumberParameter("Anti-ideal", "AntiId", "Normalized sintectic worse alternatives", GH_ParamAccess.list);
             pManager.AddGenericParameter("Performance", "Sim", "Indicates how far from the anti-ideal and how closer to the ideal are the real alternatives", GH_ParamAccess.item);
@@ -140,9 +141,9 @@ namespace MCDA
             var performancescorearray = converter.Calculateperformancescore(idealbestnparray, idealworstnparray);
             var performancescorelist = performancescorearray.GetData<double>();
 
-            var rankinglist = converter.CalculateRankings(performancescorearray, inpCriteria);
+            var rankinglist = converter.CalculateRankings(performancescorearray, Designoptions);
 
-            DA.SetDataList(0, idealbestlist);
+            DA.SetDataList(0, rankinglist);
             DA.SetDataList(1, idealbestlist);
             DA.SetDataList(2, idealworstlist);
             DA.SetDataList(3, performancescorelist);
@@ -151,13 +152,22 @@ namespace MCDA
         /// <summary>
         /// Provides an Icon for the component.
         /// </summary>
-        protected override System.Drawing.Bitmap Icon
+        protected override Bitmap Icon
         {
             get
             {
-                //You can add image files to your project resources and access them like this:
-                // return Resources.IconForThisComponent;
-                return null;
+                // Specify the path to your logo image
+                string imagePath = "C:\\Users\\AOMAN\\source\\repos\\Grasshopper_test\\Grasshopper_test\\Resources\\Images\\MCDA_Logo.png"; // Replace with the actual path to your logo image
+
+                if (System.IO.File.Exists(imagePath))
+                {
+                    return new Bitmap(imagePath);
+                }
+                else
+                {
+                    // Return a default icon or handle the error gracefully
+                    return null;
+                }
             }
         }
 
