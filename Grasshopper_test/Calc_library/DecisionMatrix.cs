@@ -46,7 +46,7 @@ namespace DeciGenArch.Calc_library
 
         public NDarray CalculateNormalizedmatrix(NDarray decisionmatrix)
         {
-            Axis axis = 1;
+            Axis axis = 0;
             var factorialdm = decisionmatrix.sum(axis);
             var reshapedfactorial = np.array(factorialdm).reshape(1, -1);
             var normalisedmatrix = decisionmatrix / reshapedfactorial;
@@ -64,24 +64,26 @@ namespace DeciGenArch.Calc_library
 
         public NDarray Calculateidealbest (NDarray Weightednormalizedmatrix)
         {
-            var axis_2 = new int[1];
+            var axislist = new int [1];
+            Axis axis = 1;
             // Calculate the maximum value in each column
-            var max_values = Weightednormalizedmatrix.max(axis_2);
+            var max_values = np.max(Weightednormalizedmatrix, axislist);
             var reshapemaxvalues = np.array(max_values).reshape(1, -1);
             var Idealbestlistsquared = np.square(Weightednormalizedmatrix - reshapemaxvalues);
-            var idealbestlist = Idealbestlistsquared.sum(axis_2);
+            var idealbestlist = Idealbestlistsquared.sum(axis);
             var idealbestvaluelist = idealbestlist.sqrt();
 
             return idealbestvaluelist;
         }
         public NDarray Calculateidealworst(NDarray Weightednormalizedmatrix)
         {
-            var axis_2 = new int[1];
+            var axislist = new int[1];
+            Axis axis = 1;
             // Calculate the maximum value in each column
-            var min_values = Weightednormalizedmatrix.min(axis_2);
+            var min_values = Weightednormalizedmatrix.min(axislist);
             var reshapeminvalues = np.array(min_values).reshape(1, -1);
             var Idealworstlistsquared = np.square(Weightednormalizedmatrix - reshapeminvalues);
-            var idealworstlist = Idealworstlistsquared.sum(axis_2);
+            var idealworstlist = Idealworstlistsquared.sum(axis);
             var idealworstvaluelist = idealworstlist.sqrt();
 
             return idealworstvaluelist;
@@ -89,19 +91,19 @@ namespace DeciGenArch.Calc_library
 
         public NDarray Calculateperformancescore(NDarray idealbest, NDarray idealworst)
         {
-            var performancescore = idealbest + idealworst;
+            var performancescore = idealworst/(idealbest + idealworst);
             return performancescore;
         }
         public List<string> CalculateRankings(NDarray performancescore, List<string> designoptions)
         {
-            var sorted_ranks = performancescore.sort();
+            var sorted_ranks = np.flip(performancescore.sort());
             var sorted_rank_list = sorted_ranks.GetData<double>();
 
             List<string> RankList = new List<string>();
 
             var Design_options = np.array(designoptions.ToArray());
             var sorted_indices = np.argsort(performancescore);
-            var sorted_strings = Design_options[sorted_indices];
+            var sorted_strings = np.flip(Design_options[sorted_indices]);
 
             // Calculate ranks and create a list of strings with ranks
             for (int i = 0; i < sorted_rank_list.Length; i++)

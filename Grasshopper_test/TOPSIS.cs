@@ -100,7 +100,7 @@ namespace MCDA
             }
 
             // Run time messages for problematic inputs
-            if (inpCriteria.Count() != inpObjectives.Count() || inpCriteria.Count() != inpWeights.Count() ||  inpCriteria.Count() != numberOfPaths)
+            if (inpCriteria.Count() != inpObjectives.Count() || inpCriteria.Count() != inpWeights.Count() )
             {
                 // Error handling: if data retrieval fails for either input, display an error message.
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "The length of input Lists should match. Each option should have input for each defined Criteria");
@@ -127,16 +127,19 @@ namespace MCDA
             TreeToArrayConverter converter = new TreeToArrayConverter();
             double[,] dmarray = converter.ConvertTreeToArray(inputTree);
             var decisionmatrix = np.array(dmarray);
+            
 
             var  normalized_matrix= converter.CalculateNormalizedmatrix(decisionmatrix);
             var weights = np.array(inpWeights.ToArray());
             var weightedNormalizedmatrix = converter.CalculateWeightedNormalizedmatrix(weights, normalized_matrix);
 
-            var idealbestnparray = converter.Calculateidealbest(weightedNormalizedmatrix);
-            var idealbestlist = idealbestnparray.GetData<double>();
 
             var idealworstnparray = converter.Calculateidealworst(weightedNormalizedmatrix);
             var idealworstlist = idealworstnparray.GetData<double>();
+
+
+            var idealbestnparray = converter.Calculateidealbest(weightedNormalizedmatrix);
+            var idealbestlist = idealbestnparray.GetData<double>();
 
             var performancescorearray = converter.Calculateperformancescore(idealbestnparray, idealworstnparray);
             var performancescorelist = performancescorearray.GetData<double>();
