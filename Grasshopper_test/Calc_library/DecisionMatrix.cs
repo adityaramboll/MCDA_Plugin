@@ -62,26 +62,57 @@ namespace DeciGenArch.Calc_library
             return wegihtedmatrix;
         }
 
-        public NDarray Calculateidealbest (NDarray Weightednormalizedmatrix)
+        public NDarray Calculateidealbest(NDarray objectives, NDarray Weightednormalizedmatrix)
         {
-            var axislist = new int [1];
+            var axislist = new int[1];
             Axis axis = 1;
             // Calculate the maximum value in each column
             var max_values = np.max(Weightednormalizedmatrix, axislist);
-            var reshapemaxvalues = np.array(max_values).reshape(1, -1);
+            var min_values = np.min(Weightednormalizedmatrix, axislist);
+            var best_values_combo = np.zeros(1, objectives.size);
+            var obj_array = objectives.GetData<double>(); 
+
+            for (int i = 0; i< objectives.size ; i++)
+            {
+                if (obj_array[i] == 1)
+                {
+                    best_values_combo[0][i] = max_values[i];
+                }
+                else
+                {
+                    best_values_combo[0][i] = min_values[i];
+                }
+            }
+
+            var reshapemaxvalues = np.array(best_values_combo).reshape(1, -1);
             var Idealbestlistsquared = np.square(Weightednormalizedmatrix - reshapemaxvalues);
             var idealbestlist = Idealbestlistsquared.sum(axis);
             var idealbestvaluelist = idealbestlist.sqrt();
 
             return idealbestvaluelist;
         }
-        public NDarray Calculateidealworst(NDarray Weightednormalizedmatrix)
+        public NDarray Calculateidealworst(NDarray objectives, NDarray Weightednormalizedmatrix)
         {
             var axislist = new int[1];
             Axis axis = 1;
             // Calculate the maximum value in each column
             var min_values = Weightednormalizedmatrix.min(axislist);
-            var reshapeminvalues = np.array(min_values).reshape(1, -1);
+            var max_values = np.max(Weightednormalizedmatrix, axislist);
+            var worst_values_combo = np.zeros(1, objectives.size);
+            var obj_array = objectives.GetData<double>();
+
+            for (int i = 0; i < objectives.size; i++)
+            {
+                if (obj_array[i] == 1)
+                {
+                    worst_values_combo[0][i] = min_values[i];
+                }
+                else
+                {
+                    worst_values_combo[0][i] = max_values[i];
+                }
+            }
+            var reshapeminvalues = np.array(worst_values_combo).reshape(1, -1);
             var Idealworstlistsquared = np.square(Weightednormalizedmatrix - reshapeminvalues);
             var idealworstlist = Idealworstlistsquared.sum(axis);
             var idealworstvaluelist = idealworstlist.sqrt();

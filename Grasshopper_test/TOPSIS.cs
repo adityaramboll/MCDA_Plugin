@@ -37,7 +37,7 @@ namespace MCDA
             pManager.AddTextParameter("DesignOptions", "Opt", "Add names to the design options", GH_ParamAccess.list);
             pManager.AddNumberParameter("inputMatrix", "IM", "Add a decision matrix to evaluate", GH_ParamAccess.tree);
             pManager.AddTextParameter("Criteria", "Crit", "Add the names of various criteria used for decision making ", GH_ParamAccess.list);
-            pManager.AddBooleanParameter("Objectives", "Obj", "Specify objectives for the criteria as a list either Min(0) or Max (1)", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Objectives", "Obj", "Specify objectives for the criteria as a list either Min(0) or Max (1)", GH_ParamAccess.list);
             pManager.AddNumberParameter("Weights", "Wei", "Add the desired weights for each criteria as a list (0-10)", GH_ParamAccess.list);
         }
 
@@ -61,9 +61,10 @@ namespace MCDA
             //Inputs empties initialized
             List<string> inpCriteria = new List<string>();
             List<string> Designoptions = new List<string>();
-            List<bool> inpObjectives = new List<bool>();
+            List<double> inpObjectives = new List<double>();
             List<double> inpWeights = new List<double>();
             int numberOfPaths = 0;
+            int numberofitems = 0;
             List<int> pathLengths = new List<int>();
 
             //Inputs  initialized using actual data
@@ -78,7 +79,7 @@ namespace MCDA
             if (DA.GetDataTree(1, out dataTree))
             {
                 numberOfPaths = dataTree.PathCount;
-
+                numberofitems = dataTree.DataCount;
                 foreach (GH_Path path in dataTree.Paths)
                 {
                     int length = dataTree.get_Branch(path).Count;
@@ -87,7 +88,7 @@ namespace MCDA
             }
 
             bool boolcheck = true;
-            int firstValue = numberOfPaths;
+            int firstValue = numberofitems/numberOfPaths;
 
             // Check if data tree input is correct 
             foreach (int value in pathLengths)
@@ -100,7 +101,7 @@ namespace MCDA
             }
 
             // Run time messages for problematic inputs
-            if (inpCriteria.Count() != inpObjectives.Count() || inpCriteria.Count() != inpWeights.Count() )
+            if (inpCriteria.Count() != inpObjectives.Count() || inpCriteria.Count() != inpWeights.Count() || Designoptions.Count() != numberOfPaths)
             {
                 // Error handling: if data retrieval fails for either input, display an error message.
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "The length of input Lists should match. Each option should have input for each defined Criteria");
@@ -129,16 +130,16 @@ namespace MCDA
             var decisionmatrix = np.array(dmarray);
             
 
-            var  normalized_matrix= converter.CalculateNormalizedmatrix(decisionmatrix);
+            var normalized_matrix= converter.CalculateNormalizedmatrix(decisionmatrix);
             var weights = np.array(inpWeights.ToArray());
             var weightedNormalizedmatrix = converter.CalculateWeightedNormalizedmatrix(weights, normalized_matrix);
 
+            var objectivesnparray = np.array(inpObjectives.ToArray());
 
-            var idealworstnparray = converter.Calculateidealworst(weightedNormalizedmatrix);
+            var idealworstnparray = converter.Calculateidealworst(objectivesnparray,weightedNormalizedmatrix);
             var idealworstlist = idealworstnparray.GetData<double>();
 
-
-            var idealbestnparray = converter.Calculateidealbest(weightedNormalizedmatrix);
+            var idealbestnparray = converter.Calculateidealbest(objectivesnparray,weightedNormalizedmatrix);
             var idealbestlist = idealbestnparray.GetData<double>();
 
             var performancescorearray = converter.Calculateperformancescore(idealbestnparray, idealworstnparray);
