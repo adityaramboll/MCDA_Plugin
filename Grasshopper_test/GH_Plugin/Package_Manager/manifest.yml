@@ -1,0 +1,15 @@
+﻿name: DeciGen
+version: 0.1.0
+authors:
+  - Aditya Soman
+
+description: >
+  DECIGEN provides a toolkit for Multi-criteria decision analysis enabling designers and engineers to take informed decisions.
+  The current implementation covers Weighted product method and TOPSIS (Technique for Order of Preference by Similarity to Ideal Solution) method.
+  
+url: "https://github.com/adityaramboll/MCDA_Plugin"
+
+keyword:
+- MCDA
+
+icon: Logo.png

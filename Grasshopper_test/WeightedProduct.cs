@@ -37,7 +37,7 @@ namespace MCDA
             pManager.AddTextParameter("DesignOptions", "Opt", "Add names to the design options", GH_ParamAccess.list);
             pManager.AddNumberParameter("inputMatrix", "IM", "Add a decision matrix to evaluate", GH_ParamAccess.tree);
             pManager.AddTextParameter("Criteria", "Crit", "Add the names of various criteria used for decision making ", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Weights", "Wei", "Add the desired weights for each criteria as a list (0-10)", GH_ParamAccess.list);
+            pManager.AddIntegerParameter("Weights", "Wei", "Add the desired weights for each criteria as a list (0-10)", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace MCDA
             pManager.AddTextParameter("Rankings", "Rank", "Result of TOPSIS ranking process", GH_ParamAccess.list);
             pManager.AddNumberParameter("Decision Matrix", "DM", "Decision matrix with values for various criteria for design options", GH_ParamAccess.list);
             pManager.AddNumberParameter("Weighted Decision Matrix", "WDM", "Scaled decision matrix according to the weights", GH_ParamAccess.list);
-            pManager.AddGenericParameter("Performance", "Per", "Indicates the final aggregation value for each design option", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Performance", "Per", "Indicates the final aggregation value for each design option", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace MCDA
             //Inputs empties initialized
             List<string> inpCriteria = new List<string>();
             List<string> Designoptions = new List<string>();
-            List<double> inpWeights = new List<double>();
+            List<int> inpWeights = new List<int>();
             int numberOfPaths = 0;
             int numberofitems = 0;
             List<int> pathLengths = new List<int>();
@@ -96,7 +96,7 @@ namespace MCDA
                     break;
                 }
             }
-
+            
             // Run time messages for problematic inputs
             if ( inpCriteria.Count() != inpWeights.Count() || Designoptions.Count() != numberOfPaths)
             {
@@ -111,6 +111,7 @@ namespace MCDA
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "The length of each branch in a data matrix doesnt match. Each option should have data for all the criteria");
                 return;
             }
+            
 
             //TOPSIS process
             GH_Structure<GH_Number> inputTree;
@@ -129,20 +130,28 @@ namespace MCDA
 
             var weights = np.array(inpWeights.ToArray());
             Axis axis = 0;
-            var check_weights = weights.sum(axis);
-            NDarray totalofweights = np.array(1);
+            var check_weights = (int)weights.sum(axis);
 
-
-            if (check_weights != totalofweights)
+            if (check_weights != 10 )
             {
                 // Error handling: if data retrieval fails for either input, display an error message.
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "The sum of all weights is not equal to 1");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "The sum of all weights is not equal to 10");
+
                 return;
             }
 
+            var weights_deci = weights / 10;
+            var weightedmatrix = converter.CalculateWeightedNormalizedmatrix(weights_deci, decisionmatrix);
 
-            DA.SetDataList(0, dmoutput);
-            DA.SetDataList(3, dmoutput);
+
+            var performmatrix = weightedmatrix.sum(axis);
+            var rankinglist = converter.CalculateRankings(performmatrix, Designoptions);
+
+            DA.SetDataList(0, rankinglist);
+            DA.SetDataList(1, dmoutput);
+            DA.SetDataList(2, weightedmatrix.GetData<double>());
+            DA.SetDataList(3, performmatrix.GetData<double>());
+
         }
 
         /// <summary>

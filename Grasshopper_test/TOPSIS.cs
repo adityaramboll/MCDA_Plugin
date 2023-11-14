@@ -13,7 +13,7 @@ using Rhino.FileIO;
 using System.Runtime.InteropServices;
 using Numpy.Models;
 using System.Drawing;
-
+using DeciGenArch.Properties;
 
 namespace MCDA
 {
@@ -25,7 +25,7 @@ namespace MCDA
         public TOPSIS()
           : base("TOPSIS", "TOPSIS",
               "Performs Multi-Criteria Decision analysis process on a decision matrix using the TOPSIS method ",
-              "MCDA", "TOPSIS")
+              "DECIGEN", "TOPSIS")
         {
         }
 
@@ -38,7 +38,7 @@ namespace MCDA
             pManager.AddNumberParameter("inputMatrix", "IM", "Add a decision matrix to evaluate", GH_ParamAccess.tree);
             pManager.AddTextParameter("Criteria", "Crit", "Add the names of various criteria used for decision making ", GH_ParamAccess.list);
             pManager.AddNumberParameter("Objectives", "Obj", "Specify objectives for the criteria as a list either Min(0) or Max (1)", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Weights", "Wei", "Add the desired weights for each criteria as a list (0-10)", GH_ParamAccess.list);
+            pManager.AddNumberParameter("Weights", "Wei", "Add the desired weights for each criteria as a list (0.1-1.0)", GH_ParamAccess.list);
         }
 
         /// <summary>
@@ -160,18 +160,7 @@ namespace MCDA
         {
             get
             {
-                // Specify the path to your logo image
-                string imagePath = "C:\\Users\\AOMAN\\source\\repos\\Grasshopper_test\\Grasshopper_test\\Resources\\Images\\MCDA_Logo.png"; // Replace with the actual path to your logo image
-
-                if (System.IO.File.Exists(imagePath))
-                {
-                    return new Bitmap(imagePath);
-                }
-                else
-                {
-                    // Return a default icon or handle the error gracefully
-                    return null;
-                }
+                return Resources.MCDA_Logo;
             }
         }
 
