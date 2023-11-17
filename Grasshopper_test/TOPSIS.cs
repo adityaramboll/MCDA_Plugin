@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 using Numpy.Models;
 using System.Drawing;
 using DeciGenArch.Properties;
+using System.IO;
 
 namespace MCDA
 {
@@ -58,99 +59,108 @@ namespace MCDA
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            //Inputs empties initialized
-            List<string> inpCriteria = new List<string>();
-            List<string> Designoptions = new List<string>();
-            List<double> inpObjectives = new List<double>();
-            List<double> inpWeights = new List<double>();
-            int numberOfPaths = 0;
-            int numberofitems = 0;
-            List<int> pathLengths = new List<int>();
-
-            //Inputs  initialized using actual data
-            DA.GetDataList(0, Designoptions);
-            DA.GetDataList(2, inpCriteria);
-            DA.GetDataList(3, inpObjectives);
-            DA.GetDataList(4, inpWeights);
-
-            GH_Structure<GH_Number> dataTree = new GH_Structure<GH_Number>();
-
-            // Check if data tree input is correct 
-            if (DA.GetDataTree(1, out dataTree))
+            try
             {
-                numberOfPaths = dataTree.PathCount;
-                numberofitems = dataTree.DataCount;
-                foreach (GH_Path path in dataTree.Paths)
+
+
+                //Inputs empties initialized
+                List<string> inpCriteria = new List<string>();
+                List<string> Designoptions = new List<string>();
+                List<double> inpObjectives = new List<double>();
+                List<double> inpWeights = new List<double>();
+                int numberOfPaths = 0;
+                int numberofitems = 0;
+                List<int> pathLengths = new List<int>();
+
+                //Inputs  initialized using actual data
+                DA.GetDataList(0, Designoptions);
+                DA.GetDataList(2, inpCriteria);
+                DA.GetDataList(3, inpObjectives);
+                DA.GetDataList(4, inpWeights);
+
+                GH_Structure<GH_Number> dataTree = new GH_Structure<GH_Number>();
+
+                // Check if data tree input is correct 
+                if (DA.GetDataTree(1, out dataTree))
                 {
-                    int length = dataTree.get_Branch(path).Count;
-                    pathLengths.Add(length);
+                    numberOfPaths = dataTree.PathCount;
+                    numberofitems = dataTree.DataCount;
+                    foreach (GH_Path path in dataTree.Paths)
+                    {
+                        int length = dataTree.get_Branch(path).Count;
+                        pathLengths.Add(length);
+                    }
                 }
-            }
 
-            bool boolcheck = true;
-            int firstValue = numberofitems/numberOfPaths;
+                bool boolcheck = true;
+                int firstValue = numberofitems / numberOfPaths;
 
-            // Check if data tree input is correct 
-            foreach (int value in pathLengths)
-            {
-                if (value != firstValue)
+                // Check if data tree input is correct 
+                foreach (int value in pathLengths)
                 {
-                    boolcheck = false;
-                    break;
+                    if (value != firstValue)
+                    {
+                        boolcheck = false;
+                        break;
+                    }
                 }
-            }
 
-            // Run time messages for problematic inputs
-            if (inpCriteria.Count() != inpObjectives.Count() || inpCriteria.Count() != inpWeights.Count() || Designoptions.Count() != numberOfPaths)
+                // Run time messages for problematic inputs
+                if (inpCriteria.Count() != inpObjectives.Count() || inpCriteria.Count() != inpWeights.Count() || Designoptions.Count() != numberOfPaths)
+                {
+                    // Error handling: if data retrieval fails for either input, display an error message.
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "The length of input Lists should match. Each option should have input for each defined Criteria");
+                    return;
+                }
+
+                if (boolcheck == false)
+                {
+                    // Error handling: if data retrieval fails for either input, display an error message.
+                    AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "The length of each branch in a data matrix doesnt match. Each option should have data for all the criteria");
+                    return;
+                }
+
+                //TOPSIS process
+                GH_Structure<GH_Number> inputTree;
+
+
+                if (!DA.GetDataTree(1, out inputTree))
+                {
+                    return;
+                }
+
+                inputTree.Simplify(GH_SimplificationMode.CollapseAllOverlaps);
+                TreeToArrayConverter converter = new TreeToArrayConverter();
+                double[,] dmarray = converter.ConvertTreeToArray(inputTree);
+                var decisionmatrix = np.array(dmarray);
+
+
+                var normalized_matrix = converter.CalculateNormalizedmatrix(decisionmatrix);
+                var weights = np.array(inpWeights.ToArray());
+                var weightedNormalizedmatrix = converter.CalculateWeightedNormalizedmatrix(weights, normalized_matrix);
+
+                var objectivesnparray = np.array(inpObjectives.ToArray());
+
+                var idealworstnparray = converter.Calculateidealworst(objectivesnparray, weightedNormalizedmatrix);
+                var idealworstlist = idealworstnparray.GetData<double>();
+
+                var idealbestnparray = converter.Calculateidealbest(objectivesnparray, weightedNormalizedmatrix);
+                var idealbestlist = idealbestnparray.GetData<double>();
+
+                var performancescorearray = converter.Calculateperformancescore(idealbestnparray, idealworstnparray);
+                var performancescorelist = performancescorearray.GetData<double>();
+
+                var rankinglist = converter.CalculateRankings(performancescorearray, Designoptions);
+
+                DA.SetDataList(0, rankinglist);
+                DA.SetDataList(1, idealbestlist);
+                DA.SetDataList(2, idealworstlist);
+                DA.SetDataList(3, performancescorelist);
+            }
+            catch ( Exception ex)
             {
-                // Error handling: if data retrieval fails for either input, display an error message.
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "The length of input Lists should match. Each option should have input for each defined Criteria");
-                return;
+               File.AppendAllText(Path.Combine( System.IO.Path.GetTempPath(), "MCDA_Plugin_log.txt") , ex.ToString());
             }
-            
-            if (boolcheck == false)
-            {
-                // Error handling: if data retrieval fails for either input, display an error message.
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "The length of each branch in a data matrix doesnt match. Each option should have data for all the criteria");
-                return;
-            }
-
-            //TOPSIS process
-            GH_Structure<GH_Number> inputTree;
-
-
-            if (!DA.GetDataTree(1, out inputTree))
-            {
-                return;
-            }
-
-            inputTree.Simplify(GH_SimplificationMode.CollapseAllOverlaps);
-            TreeToArrayConverter converter = new TreeToArrayConverter();
-            double[,] dmarray = converter.ConvertTreeToArray(inputTree);
-            var decisionmatrix = np.array(dmarray);
-            
-
-            var normalized_matrix= converter.CalculateNormalizedmatrix(decisionmatrix);
-            var weights = np.array(inpWeights.ToArray());
-            var weightedNormalizedmatrix = converter.CalculateWeightedNormalizedmatrix(weights, normalized_matrix);
-
-            var objectivesnparray = np.array(inpObjectives.ToArray());
-
-            var idealworstnparray = converter.Calculateidealworst(objectivesnparray,weightedNormalizedmatrix);
-            var idealworstlist = idealworstnparray.GetData<double>();
-
-            var idealbestnparray = converter.Calculateidealbest(objectivesnparray,weightedNormalizedmatrix);
-            var idealbestlist = idealbestnparray.GetData<double>();
-
-            var performancescorearray = converter.Calculateperformancescore(idealbestnparray, idealworstnparray);
-            var performancescorelist = performancescorearray.GetData<double>();
-
-            var rankinglist = converter.CalculateRankings(performancescorearray, Designoptions);
-
-            DA.SetDataList(0, rankinglist);
-            DA.SetDataList(1, idealbestlist);
-            DA.SetDataList(2, idealworstlist);
-            DA.SetDataList(3, performancescorelist);
         }
 
         /// <summary>
